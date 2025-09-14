@@ -19,6 +19,7 @@ import { useState, useEffect } from "react";
 import { LocationSelector } from "@/components/LocationSelector";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { fetchCurrentWeather } from "@/services/weatherService";
+import { ChatAssistant } from "../ChatAssistant";
 
 interface HomeScreenProps {
   onNavigate: (screen: string) => void;
@@ -42,7 +43,7 @@ const CITY_COORDINATES = {
 export const HomeScreen = ({ onNavigate }: HomeScreenProps) => {
   const { t } = useLanguage();
   const { location, setLocation } = useLocationContext();
-  const [showLocationSelector, setShowLocationSelector] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const [weatherData, setWeatherData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,11 +107,35 @@ export const HomeScreen = ({ onNavigate }: HomeScreenProps) => {
   const handleLocationSelect = (state: string, city: string) => {
     const newLocation = { state, city };
     setLocation(newLocation);
-    setShowLocationSelector(false);
   };
 
   return (
     <div className="min-h-screen bg-gradient-earth">
+      {/* Chat Assistant - Shown inline when active */}
+      {showChat ? (
+        <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm p-4">
+          <div className="max-w-4xl mx-auto h-full flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Chat Assistant</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowChat(false)}
+                className="h-8 w-8"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </Button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <ChatAssistant isOpen={true} onClose={() => setShowChat(false)} />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* Hero Section */}
       <div className="relative h-48 overflow-hidden rounded-b-2xl">
         <img
@@ -120,16 +145,6 @@ export const HomeScreen = ({ onNavigate }: HomeScreenProps) => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
         <div className="absolute bottom-4 left-4 text-white">
-          <div
-            className="flex items-center gap-2 mb-2 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => setShowLocationSelector(true)}
-          >
-            <MapPin className="h-4 w-4" />
-            <span className="text-sm flex items-center gap-1">
-              {location ? `${location.city}, ${location.state}` : t('selectLocation')}
-              <ChevronDown className="h-3 w-3" />
-            </span>
-          </div>
           <h2 className="text-xl font-bold">{t('appTitle')}</h2>
           <p className="text-sm opacity-90">{t('appSubtitle')}</p>
         </div>
@@ -137,14 +152,21 @@ export const HomeScreen = ({ onNavigate }: HomeScreenProps) => {
           variant="sunshine"
           size="sm"
           className="absolute top-4 right-4"
-          onClick={() => {/* Add notification handler */}}
+          onClick={() => setShowChat(true)}
         >
-          <Bell className="h-4 w-4" />
+          <MessageCircle className="h-4 w-4" />
         </Button>
       </div>
 
       {/* Main Content */}
       <div className="p-4 space-y-4">
+        {/* Location Selector */}
+        <LocationSelector
+          onLocationSelect={handleLocationSelect}
+          currentLocation={location || undefined}
+          className="mb-4"
+        />
+
         {/* Weather Card */}
         <Card className="bg-white/10 backdrop-blur-sm border-0">
           <CardHeader>
@@ -199,7 +221,7 @@ export const HomeScreen = ({ onNavigate }: HomeScreenProps) => {
         <h3 className="text-lg font-semibold mt-6 mb-2">
           {t('quickActions') || 'Quick Actions'}
         </h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {quickActions.map((action, index) => (
             <QuickActionCard
               key={index}
@@ -212,28 +234,6 @@ export const HomeScreen = ({ onNavigate }: HomeScreenProps) => {
           ))}
         </div>
       </div>
-
-      {/* Location Selector Modal */}
-      {showLocationSelector && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold mb-4">
-              {t('selectLocation') || 'Select Location'}
-            </h3>
-            <LocationSelector
-              onLocationSelect={handleLocationSelect}
-              currentLocation={location}
-            />
-            <Button
-              variant="outline"
-              className="w-full mt-4"
-              onClick={() => setShowLocationSelector(false)}
-            >
-              {t('cancel') || 'Cancel'}
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

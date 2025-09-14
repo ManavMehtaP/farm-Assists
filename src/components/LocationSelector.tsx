@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { MapPin } from "lucide-react";
+import { MapPin, ChevronDown } from "lucide-react";
 
 // Indian states and their major cities
 const indianLocations = {
@@ -42,11 +42,11 @@ interface LocationSelectorProps {
   currentLocation?: { state: string; city: string };
 }
 
-export const LocationSelector = ({ onLocationSelect, currentLocation }: LocationSelectorProps) => {
+export const LocationSelector = ({ onLocationSelect, currentLocation, className = '' }: LocationSelectorProps) => {
   const { t } = useLanguage();
   const [selectedState, setSelectedState] = useState(currentLocation?.state || '');
   const [selectedCity, setSelectedCity] = useState(currentLocation?.city || '');
-  const [showPopup, setShowPopup] = useState(!currentLocation);
+  const [isOpen, setIsOpen] = useState(false);
 
   const states = Object.keys(indianLocations).sort();
   const cities = selectedState ? (indianLocations[selectedState as keyof typeof indianLocations] || []) : [];
@@ -55,13 +55,11 @@ export const LocationSelector = ({ onLocationSelect, currentLocation }: Location
     e.preventDefault();
     if (selectedState && selectedCity) {
       onLocationSelect(selectedState, selectedCity);
-      setShowPopup(false);
-      // Save to localStorage
-      localStorage.setItem('userLocation', JSON.stringify({ state: selectedState, city: selectedCity }));
+      setIsOpen(false);
     }
   };
 
-  // Load saved location from localStorage on mount
+  // Load saved location on mount
   useEffect(() => {
     const savedLocation = localStorage.getItem('userLocation');
     if (savedLocation) {
@@ -73,107 +71,104 @@ export const LocationSelector = ({ onLocationSelect, currentLocation }: Location
     }
   }, []);
 
-  if (!showPopup) {
-    return (
-      <Button
-        variant="outline"
-        className="fixed bottom-6 right-6 z-50 bg-background/80 backdrop-blur-sm flex items-center gap-2"
-        onClick={() => setShowPopup(true)}
-      >
-        <MapPin className="h-4 w-4" />
-        {currentLocation ? `${currentLocation.city}, ${currentLocation.state}` : t('selectLocation')}
-      </Button>
-    );
-  }
-
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md border-0 shadow-xl bg-background/95">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-full bg-primary/10">
-              <MapPin className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <CardTitle>{t('selectYourLocation') || 'Select Your Location'}</CardTitle>
-              <CardDescription>
-                {t('locationHelpText') || 'Choose your state and city to get accurate weather and farming information.'}
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium leading-none" htmlFor="state">
-                {t('state') || 'State'}
-              </label>
-              <Select
-                value={selectedState}
-                onValueChange={(value) => {
-                  setSelectedState(value);
-                  setSelectedCity('');
-                }}
-                required
-              >
-                <SelectTrigger id="state" className="w-full">
-                  <SelectValue placeholder={t('selectState') || 'Select a state'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {states.map((state) => (
-                    <SelectItem key={state} value={state}>
-                      {state}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`h-8 px-2 text-sm font-normal text-foreground/90 hover:bg-background/50 ${className}`}
+        >
+          <MapPin className="h-3.5 w-3.5 mr-1.5" />
+          {currentLocation ? (
+            <span className="truncate max-w-[120px]">{currentLocation.city}, {currentLocation.state}</span>
+          ) : (
+            <span>{t('selectLocation') || 'Select Location'}</span>
+          )}
+          <ChevronDown className="h-3.5 w-3.5 ml-1 opacity-70" />
+        </Button>
+      </DialogTrigger>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium leading-none" htmlFor="city">
-                {t('city') || 'City'}
-              </label>
-              <Select
-                value={selectedCity}
-                onValueChange={setSelectedCity}
-                disabled={!selectedState}
-                required
-              >
-                <SelectTrigger id="city" className="w-full">
-                  <SelectValue placeholder={selectedState ? (t('selectCity') || 'Select a city') : (t('selectStateFirst') || 'Select a state first')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {cities.map((city) => (
-                    <SelectItem key={city} value={city}>
-                      {city}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-between">
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-primary" />
+            {t('selectLocation') || 'Select Your Location'}
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              {t('state') || 'State'}
+            </label>
+            <Select
+              value={selectedState}
+              onValueChange={(value) => {
+                setSelectedState(value);
+                setSelectedCity('');
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('selectState') || 'Select State'} />
+              </SelectTrigger>
+              <SelectContent>
+                {states.map((state) => (
+                  <SelectItem key={state} value={state}>
+                    {state}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              {t('city') || 'City'}
+            </label>
+            <Select
+              value={selectedCity}
+              onValueChange={setSelectedCity}
+              disabled={!selectedState}
+            >
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={
+                    !selectedState
+                      ? (t('selectStateFirst') || 'Select state first')
+                      : (t('selectCity') || 'Select City')
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {cities.map((city) => (
+                  <SelectItem key={city} value={city}>
+                    {city}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
-                if (currentLocation) {
-                  setShowPopup(false);
-                } else {
-                  // Use default location if no location is set yet
-                  onLocationSelect('Gujarat', 'Ahmedabad');
-                  setShowPopup(false);
-                }
-              }}
+              onClick={() => setIsOpen(false)}
+              size="sm"
             >
-              {currentLocation ? t('cancel') : t('useDefaultLocation')}
+              {t('cancel') || 'Cancel'}
             </Button>
-            <Button type="submit" disabled={!selectedState || !selectedCity}>
-              {t('saveLocation') || 'Save Location'}
+            <Button
+              type="submit"
+              size="sm"
+              disabled={!selectedState || !selectedCity}
+            >
+              {t('apply') || 'Apply'}
             </Button>
-          </CardFooter>
+          </div>
         </form>
-      </Card>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

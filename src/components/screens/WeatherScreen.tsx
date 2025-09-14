@@ -10,7 +10,12 @@ import {
   Droplets,
   Wind,
   Gauge,
-  Eye
+  Eye,
+  Calendar,
+  Thermometer,
+  CloudRain as RainIcon,
+  Sunrise,
+  Sunset
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEffect, useState } from "react";
@@ -18,24 +23,44 @@ import { fetchCurrentWeather, fetchWeatherForecast, getWeatherIconUrl } from "@/
 import { useLocation } from "react-router-dom";
 
 interface WeatherData {
-  temp: number;
-  feels_like: number;
-  humidity: number;
-  wind_speed: number;
+  dt: number;
+  main: {
+    temp: number;
+    feels_like: number;
+    humidity: number;
+    pressure: number;
+    temp_min: number;
+    temp_max: number;
+  };
   weather: Array<{
     main: string;
     description: string;
     icon: string;
   }>;
-  dt: number;
+  wind: {
+    speed: number;
+    deg: number;
+    gust?: number;
+  };
   pop?: number;
-  dt_txt?: string;
+  sunrise?: number;
+  sunset?: number;
 }
+
+const formatDate = (timestamp: number): string => {
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+};
+
+const formatTime = (timestamp: number): string => {
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+};
 
 export const WeatherScreen = () => {
   const { t } = useLanguage();
   const { state } = useLocation();
-  const location = state?.location;
+  const location = state?.location || { city: 'Ahmedabad', state: 'Gujarat' };
 
   const [weatherData, setWeatherData] = useState<{
     current: WeatherData | null;
@@ -43,152 +68,162 @@ export const WeatherScreen = () => {
   }>({ current: null, forecast: [] });
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{message: string; details?: string} | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Function to fetch weather data
   const fetchWeather = async () => {
-    if (!location) return;
+    if (!location) {
+      setError({ message: 'Location not set' });
+      return;
+    }
 
     setLoading(true);
     setError(null);
 
     try {
-      // Use a geocoding service to get lat/lon from city name
-      // For now, we'll use a default location if geocoding fails
-      let lat = 23.0225; // Default to Ahmedabad
-      let lon = 72.5714;
+      // Default to Ahmedabad coordinates
+      const lat = 23.0225;
+      const lon = 72.5714;
 
-      // In a real app, you would use a geocoding service here
-      // Example: const { lat, lon } = await geocodeLocation(location.city, location.state);
-
-      const [current, forecast] = await Promise.all([
-        fetchCurrentWeather(lat, lon),
-        fetchWeatherForecast(lat, lon)
+      console.log('Fetching weather data...');
+      const [current, forecastData] = await Promise.all([
+        fetchCurrentWeather(lat, lon).catch(err => {
+          console.error('Error in fetchCurrentWeather:', err);
+          throw new Error(`Failed to fetch current weather: ${err.message}`);
+        }),
+        fetchWeatherForecast(lat, lon).catch(err => {
+          console.error('Error in fetchWeatherForecast:', err);
+          throw new Error(`Failed to fetch forecast: ${err.message}`);
+        })
       ]);
+
+      console.log('Weather data received:', { current, forecast: forecastData.list });
 
       setWeatherData({
         current: current,
-        forecast: forecast
+        forecast: forecastData.list
       });
       setLastUpdated(new Date());
     } catch (err) {
-      console.error('Error fetching weather:', err);
-      setError(t('weatherFetchError') || 'Failed to fetch weather data');
+      console.error('Error in fetchWeather:', err);
+      setError({
+        message: 'Failed to load weather data',
+        details: err instanceof Error ? err.message : String(err)
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch weather data when location changes
+  // Fetch weather data when component mounts
   useEffect(() => {
-    if (location) {
-      fetchWeather();
-    }
+    fetchWeather();
   }, [location]);
 
-  const getWeatherIcon = (condition: string) => {
-    const conditionLower = condition.toLowerCase();
-    if (conditionLower.includes('rain')) {
-      return <CloudRain className="h-8 w-8 text-primary" />;
-    } else if (conditionLower.includes('cloud')) {
-      return <Cloud className="h-8 w-8 text-muted-foreground" />;
-    } else {
-      return <Sun className="h-8 w-8 text-warning" />;
-    }
-  };
-
-  if (loading && !weatherData.current) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading weather data...</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <div className="text-destructive mb-4">{error}</div>
-        <Button onClick={fetchWeather}>
+      <div className="text-center p-8">
+        <p className="text-destructive text-lg font-medium mb-2">{error.message}</p>
+        {error.details && (
+          <p className="text-muted-foreground text-sm mb-4">
+            {error.details}
+          </p>
+        )}
+        <Button onClick={fetchWeather} variant="outline">
           <RefreshCw className="mr-2 h-4 w-4" />
-          {t('retry') || 'Retry'}
+          Try Again
         </Button>
+        <div className="mt-4 p-4 bg-muted/50 rounded-md text-left">
+          <h4 className="font-medium mb-2">Troubleshooting:</h4>
+          <ul className="list-disc pl-5 space-y-1 text-sm">
+            <li>Check your internet connection</li>
+            <li>Verify your OpenWeatherMap API key is set in the .env file</li>
+            <li>Make sure the API key has access to the One Call API</li>
+          </ul>
+        </div>
       </div>
     );
   }
 
-  const { current } = weatherData;
-  const todayForecast = weatherData.forecast[0];
+  const { current, forecast } = weatherData;
 
   return (
-    <div className="min-h-screen bg-gradient-earth p-4 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <MapPin className="h-5 w-5 text-primary" />
-          <div>
-            <h1 className="text-xl font-bold">
-              {location ? `${location.city}, ${location.state}` : t('selectLocation')}
-            </h1>
-            {lastUpdated && (
-              <p className="text-xs text-muted-foreground">
-                {t('lastUpdated') || 'Last updated'} {lastUpdated.toLocaleTimeString()}
-              </p>
-            )}
-          </div>
+    <div className="space-y-6">
+      {/* Location and Last Updated */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center">
+          <MapPin className="h-5 w-5 mr-2" />
+          <h2 className="text-2xl font-bold">
+            {location.city}, {location.state}
+          </h2>
         </div>
-        <Button variant="ghost" size="icon" onClick={fetchWeather} disabled={loading}>
-          <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
-        </Button>
+        {lastUpdated && (
+          <div className="text-sm text-muted-foreground mt-2 md:mt-0">
+            Last updated: {lastUpdated.toLocaleTimeString()}
+          </div>
+        )}
       </div>
 
       {/* Current Weather */}
       {current && (
-        <Card className="p-6 bg-white/10 backdrop-blur-sm border-0 shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
+        <Card className="p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex flex-col items-center justify-center">
+              <div className="text-5xl font-bold mb-2">
+                {Math.round(current.main.temp)}°C
+              </div>
+              <div className="text-lg capitalize">
+                {current.weather[0]?.description}
+              </div>
+              <div className="flex items-center mt-2">
+                <Thermometer className="h-4 w-4 mr-1" />
+                <span>Feels like {Math.round(current.main.feels_like)}°C</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center">
+              {current.weather[0]?.icon && (
                 <img
                   src={getWeatherIconUrl(current.weather[0].icon)}
                   alt={current.weather[0].description}
-                  className="h-16 w-16"
+                  className="h-24 w-24"
                 />
-                <div>
-                  <h2 className="text-4xl font-bold">{Math.round(current.temp)}°C</h2>
-                  <p className="capitalize">{current.weather[0].description}</p>
-                </div>
-              </div>
+              )}
             </div>
-            <div className="text-right">
-              <p className="text-sm">
-                {t('feelsLike')} {Math.round(current.feels_like)}°C
-              </p>
-              <p className="text-sm">{t('humidity')}: {current.humidity}%</p>
-              <p className="text-sm">{t('wind')}: {current.wind_speed} m/s</p>
-            </div>
-          </div>
-        </Card>
-      )}
 
-      {/* Weather Details */}
-      {current && (
-        <Card className="p-4 bg-white/5 backdrop-blur-sm border-0">
-          <h3 className="font-semibold mb-3">{t('weatherDetails') || 'Weather Details'}</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
-              <Droplets className="h-6 w-6 text-primary" />
-              <div>
-                <div className="text-sm text-muted-foreground">{t('humidity')}</div>
-                <div className="font-semibold">{current.humidity}%</div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col items-center">
+                <Droplets className="h-5 w-5 mb-1" />
+                <span className="text-sm">Humidity</span>
+                <span className="font-medium">{current.main.humidity}%</span>
               </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
-              <Wind className="h-6 w-6 text-secondary" />
-              <div>
-                <div className="text-sm text-muted-foreground">{t('wind')}</div>
-                <div className="font-semibold">{current.wind_speed} m/s</div>
+              <div className="flex flex-col items-center">
+                <Wind className="h-5 w-5 mb-1" />
+                <span className="text-sm">Wind</span>
+                <span className="font-medium">{current.wind.speed} m/s</span>
               </div>
+              <div className="flex flex-col items-center">
+                <Gauge className="h-5 w-5 mb-1" />
+                <span className="text-sm">Pressure</span>
+                <span className="font-medium">{current.main.pressure} hPa</span>
+              </div>
+              {current.pop !== undefined && (
+                <div className="flex flex-col items-center">
+                  <RainIcon className="h-5 w-5 mb-1" />
+                  <span className="text-sm">Precipitation</span>
+                  <span className="font-medium">{Math.round(current.pop * 100)}%</span>
+                </div>
+              )}
             </div>
           </div>
         </Card>
@@ -196,29 +231,77 @@ export const WeatherScreen = () => {
 
       {/* 7-Day Forecast */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">{t('weeklyForecast') || '7-Day Forecast'}</h2>
-        <div className="space-y-2">
-          {weatherData.forecast.slice(0, 7).map((day, index) => (
-            <Card key={index} className="p-3 bg-white/5 backdrop-blur-sm border-0">
-              <div className="flex items-center justify-between">
-                <div className="w-24">
-                  {index === 0 ? t('today') : new Date(day.dt * 1000).toLocaleDateString(undefined, { weekday: 'long' })}
-                </div>
-                <div className="flex items-center gap-2">
-                  <img
-                    src={getWeatherIconUrl(day.weather[0].icon)}
-                    alt={day.weather[0].description}
-                    className="h-8 w-8"
-                  />
-                  <span className="w-10 text-right">{Math.round(day.temp)}°</span>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {day.pop ? `${Math.round(day.pop * 100)}%` : '0%'} {t('chanceOfRain') || 'rain'}
-                </div>
+        <h3 className="text-xl font-semibold mb-4 flex items-center">
+          <Calendar className="h-5 w-5 mr-2" />
+          7-Day Forecast
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
+          {forecast.map((day, index) => (
+            <Card key={day.dt} className="p-4 flex flex-col items-center">
+              <div className="font-medium text-center">
+                {index === 0 ? 'Today' : formatDate(day.dt).split(',')[0]}
               </div>
+              <div className="text-sm text-muted-foreground mb-2">
+                {formatDate(day.dt).split(',').slice(1).join(',').trim()}
+              </div>
+
+              {day.weather[0]?.icon && (
+                <img
+                  src={getWeatherIconUrl(day.weather[0].icon)}
+                  alt={day.weather[0].description}
+                  className="h-16 w-16 my-2"
+                />
+              )}
+
+              <div className="flex space-x-2 mt-2">
+                <span className="font-medium">{Math.round(day.main.temp_max)}°</span>
+                <span className="text-muted-foreground">{Math.round(day.main.temp_min)}°</span>
+              </div>
+
+              <div className="text-sm text-muted-foreground text-center mt-2">
+                {day.weather[0]?.description}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 mt-3 text-xs w-full">
+                <div className="flex items-center">
+                  <Droplets className="h-3 w-3 mr-1" />
+                  <span>{day.main.humidity}%</span>
+                </div>
+                <div className="flex items-center">
+                  <Wind className="h-3 w-3 mr-1" />
+                  <span>{day.wind.speed} m/s</span>
+                </div>
+                {day.pop !== undefined && (
+                  <div className="flex items-center col-span-2 justify-center">
+                    <RainIcon className="h-3 w-3 mr-1" />
+                    <span>{Math.round(day.pop * 100)}% chance of rain</span>
+                  </div>
+                )}
+              </div>
+
+              {day.sunrise && day.sunset && (
+                <div className="flex justify-between w-full mt-3 text-xs">
+                  <div className="flex flex-col items-center">
+                    <Sunrise className="h-4 w-4 text-amber-500" />
+                    <span>{formatTime(day.sunrise)}</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <Sunset className="h-4 w-4 text-amber-700" />
+                    <span>{formatTime(day.sunset)}</span>
+                  </div>
+                </div>
+              )}
             </Card>
           ))}
         </div>
+      </div>
+
+      {/* Refresh Button */}
+      <div className="flex justify-end">
+        <Button onClick={fetchWeather} variant="outline">
+          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
     </div>
   );

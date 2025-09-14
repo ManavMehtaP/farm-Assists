@@ -20,7 +20,7 @@ const cityCoordinates: Record<string, { lat: number; lon: number }> = {
 };
 
 export const WeatherCard = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { location } = useLocationContext();
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -147,9 +147,9 @@ export const WeatherCard = () => {
         {/* Location and Date */}
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-2xl font-bold">{location.city}, {location.state}</h3>
+            <h3 className="text-2xl font-bold">{t('location')}</h3>
             <p className="text-muted-foreground">
-              {new Date().toLocaleDateString('en-IN', {
+              {new Date().toLocaleDateString(language === 'hi' ? 'hi-IN' : language === 'gu' ? 'gu-IN' : 'en-IN', {
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',
