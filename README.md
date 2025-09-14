@@ -1,73 +1,96 @@
-# Welcome to your Lovable project
+FarmAssist 🌾
+A comprehensive farming assistant application designed to support farmers with crop recommendations, weather information, market prices, and government schemes—all available in multiple Indian languages.
 
-## Project info
+📸 Screenshots<img width="1440" height="900" alt="Screenshot 2025-09-14 at 10 36 43 AM" src="https://github.com/user-attachments/assets/4a6fdd75-7459-47e1-ba2e-7da2b660bda1" />
 
-**URL**: https://lovable.dev/projects/fe2fe161-15a1-47d6-ada4-6fb22f7a6c93
 
-## How can I edit this code?
 
-There are several ways of editing your application.
 
-**Use Lovable**
+🌟 Core Features
+✅ Crop Recommendations: Get personalized crop suggestions based on location and soil type.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/fe2fe161-15a1-47d6-ada4-6fb22f7a6c93) and start prompting.
+✅ Weather Forecast: Access real-time weather updates and forecasts to plan farming activities.
 
-Changes made via Lovable will be committed automatically to this repo.
+✅ Market Prices (Mandi Prices): Stay updated with current market prices for various crops to maximize profits.
 
-**Use your preferred IDE**
+✅ Government Schemes: Find curated information about agricultural schemes, subsidies, and benefits.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+✅ Multilingual Support: Fully accessible in English, Hindi, and Gujarati to cater to a diverse user base.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+🛠️ Tech Stack
+This project is built with a modern and efficient technology stack:
 
-Follow these steps:
+Category	Technology
+Core Framework	React, Vite, TypeScript
+UI Components	shadcn/ui - Beautifully designed, accessible, and customizable components.
+Styling	Tailwind CSS - A utility-first CSS framework for rapid UI development.
+State Management	React Context API - For managing global state efficiently.
+API Integration	OpenWeatherMap API - To fetch real-time weather data.
+🚀 Getting Started
+Follow these instructions to set up and run the project locally.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Prerequisites
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Node.js (v18.x or later)
 
-# Step 3: Install the necessary dependencies.
-npm i
+npm (or yarn/pnpm)
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+An API key from OpenWeatherMap
+
+Installation & Setup
+
+Clone the repository:
+
+Bash
+git clone https://github.com/ManavMehtaP/farm-Assists.git
+Navigate to the project directory:
+
+Bash
+cd farm-Assists
+Install the dependencies:
+
+Bash
+npm install
+Set up your environment variables:
+Create a new file named .env in the root of your project and add your OpenWeatherMap API key.
+
+Code snippet
+VITE_OPENWEATHER_API_KEY=your_api_key_here
+Run the development server:
+
+Bash
 npm run dev
-```
+The application will be available at http://localhost:5173.
 
-**Edit a file directly in GitHub**
+📜 Available Scripts
+npm run dev: Starts the development server with Hot Module Replacement (HMR).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+npm run build: Compiles and bundles the application for production.
 
-**Use GitHub Codespaces**
+npm run preview: Serves the production build locally for previewing.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+npm run lint: Runs ESLint to check for code quality and style issues.
 
-## What technologies are used for this project?
+🤝 How to Contribute
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
 
-This project is built with:
+Fork the Project
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Create your Feature Branch (git checkout -b feature/AmazingFeature)
 
-## How can I deploy this project?
+Commit your Changes (git commit -m 'Add some AmazingFeature')
 
-Simply open [Lovable](https://lovable.dev/projects/fe2fe161-15a1-47d6-ada4-6fb22f7a6c93) and click on Share -> Publish.
+Push to the Branch (git push origin feature/AmazingFeature)
 
-## Can I connect a custom domain to my Lovable project?
+Open a Pull Request
 
-Yes, you can!
+📄 License
+This project is distributed under the MIT License. See the LICENSE file for more information.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+📧 Contact
+Manav Mehta       - mehtamanav097@gmail.com
+Yash Mohanani     - yashmohinani21@gmail.com
+Adit Kapadiya     - aditkapadiya1230@gmail.com
+Manasvi Kasangara - manasvikansagra444@gmail.com
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Project Link: https://github.com/ManavMehtaP/farm-Assists
